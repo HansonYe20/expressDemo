@@ -2,7 +2,7 @@
   "name": "node-study",
   "version": "1.0.0",
   "description": "demo & description for node",
-  "main": "index.js",
+  "main": "./src/project1/meadowlark.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,5 +12,10 @@
     "test"
   ],
   "author": "YJ",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "eslint": "^6.5.1",
+    "express": "^4.17.1",
+    "express3-handlebars": "^0.5.2"
+  }
 }
