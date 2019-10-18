@@ -1,7 +1,21 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const fortune = require('./lib/fortune.js');
+
+
+
 app.set('port', process.env.PORT || 3000);
+
+console.log(`__dirname: ${__dirname}`)
+
+app.use(function (req, res, next) {
+  res.locals.showTests = app.get('env') !== 'production' &&
+    req.query.test === '1';
+  next();
+});
+
+app.use(express.static(__dirname + '/public')); // static中间件, 1.放在所有路由之前 2. public在链接上直接访问, 无需加/public这一层
 
 // 设置 handlebars 视图引擎
 const exphbs = require('express3-handlebars').create({
@@ -11,16 +25,27 @@ const exphbs = require('express3-handlebars').create({
 
 app.engine('handlebars', exphbs.engine);
 app.set('view engine', 'handlebars');
-app.set('views', path.join(__dirname, 'views')); 
+app.set('views', path.join(__dirname, 'views'));
 
 app.get('/', function (req, res) {
   console.log('this is home page');
-  console.log(viewsPath);
   res.render('home');
 });
-app.get('/about', function (req, res) {
-  res.render('about');
+
+app.get('/tours/hood-river', function(req, res){
+  res.render('tours/hood-river');
 });
+app.get('/tours/request-group-rate', function(req, res){
+  res.render('tours/request-group-rate');
+});
+
+app.get('/about', function (req, res) {
+  res.render('about', {
+    fortune: fortune.getFortune(), // 传递参数
+    pageTestScript: '/qa/tests-about.js'
+  });
+});
+
 // 404 catch-all 处理器(中间件) 
 app.use(function (req, res, next) {
   res.status(404);
