@@ -10,8 +10,7 @@ suite('Cross-Page Tests', function () {
     var referrer = 'http://localhost:3000/tours/hood-river';
     browser.visit(referrer, function () { // browser.visit 会真正加载页面，页面加载完成后，就会调用回调函数。
       browser.clickLink('.requestGroupRate', function () { // browser.clickLink 找到 class 为 requestGroupRate 的链接，并访问它
-        assert(browser.field('referrer').value
-          === referrer);
+        assert(browser.field('referrer').value === referrer);
         done();
       });
     });
