@@ -2,5 +2,7 @@
 node_modules
 .DS_Store
 
+src/project1/lib/credentials.js
+
 # usually maybe recover files
 *~
