@@ -5,6 +5,8 @@ const fortune = require('./lib/fortune.js');
 const weatherData = require('./lib/weatherData.js');
 const formidable = require('formidable');
 const credentials = require('./lib/credentials.js');
+// const connect = require('connect');
+const nodemailer = require('nodemailer');
 
 app.set('port', process.env.PORT || 3000);
 
@@ -16,9 +18,18 @@ app.use(function (req, res, next) {
   next();
 });
 
+
+app.use(require('cookie-parser')(credentials.cookieSecret));
+app.use(require('express-session')());
+
 app.use(require('body-parser')());
 
 app.use(require('cookie-parser')(credentials.cookieSecret));
+
+// app.use(require('./lib/requiresWaiver.js'));
+var cartValidation = require('./lib/cartValidation.js');
+app.use(cartValidation.checkWaivers);
+app.use(cartValidation.checkGuestCounts);
 
 app.use(express.static(__dirname + '/public')); // static中间件, 1.放在所有路由之前 2. public在链接上直接访问, 无需加/public这一层
 
@@ -48,6 +59,9 @@ app.use(function (req, res, next) {
   res.cookie('monster', Math.random());
   res.cookie('signed_monster', 'nom nom', { signed: true });
 
+  req.session.userName = 'hanson';
+  req.session.flash = 'Ye';
+
   if (!res.locals.partials) { // locals 上下文环境
     res.locals.partials = {};
   }
@@ -55,8 +69,18 @@ app.use(function (req, res, next) {
   next();
 });
 
+// app.use(connect.basicAuth)();
+
+app.use(function (req, res, next) {
+  // 如果有即显消息，把它传到上下文中，然后清除它 
+  res.locals.flash = req.session.flash;
+  delete req.session.flash;
+  next();
+});
 
 app.get('/', function (req, res) {
+  console.log(req.session.userName);
+  console.log(res.locals.flash);
   res.render('home');
 });
 
@@ -87,13 +111,37 @@ app.get('/newsletter', function (req, res) {
   res.render('newsletter', { csrf: 'CSRF token goes here' });
 });
 
-// app.post('/process', function (req, res) {
-//   console.log('Form (from querystring): ' + req.query.form);
-//   console.log('CSRF token (from hidden form field): ' + req.body._csrf);
-//   console.log('Name (from visible form field): ' + req.body.name);
-//   console.log('Email (from visible form field): ' + req.body.email);
-//   res.redirect(303, '/thanks');
+// app.post('/newsletterSubmit', function (req, res) {
+//   var name = req.body.name || '', email = req.body.email || ''; // 输入验证
+//   if (!email.match(VALID_EMAIL_REGEX)) {
+//     if (req.xhr) return res.json({ error: 'Invalid name email address.' });
+//     req.session.flash = {
+//       type: 'danger',
+//       intro: 'Validation error!',
+//       message: 'The email address you entered was not valid.',
+//     };
+//     return res.redirect(303, '/newsletter/archive');
+//   }
+//   new NewsletterSignup({ name: name, email: email }).save(function (err) {
+//     if (err) {
+//       if (req.xhr) return res.json({ error: 'Database error.' });
+//       req.session.flash = {
+//         type: 'danger',
+//         intro: 'Database error!',
+//         message: 'There was a database error; please try again later.',
+//       }
+//       return res.redirect(303, '/newsletter/archive');
+//     }
+//     if (req.xhr) return res.json({ success: true });
+//     req.session.flash = {
+//       type: 'success',
+//       intro: 'Thank you!',
+//       message: 'You have now been signed up for the newsletter.',
+//     };
+//     return res.redirect(303, '/newsletter/archive');
+//   });
 // });
+
 app.post('/process', function (req, res) {
   if (req.xhr || req.accepts('json,html') === 'json') {
     // 如果发生错误，应该发送 { error: 'error description' }
