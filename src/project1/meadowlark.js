@@ -7,10 +7,35 @@ const formidable = require('formidable');
 const credentials = require('./lib/credentials.js');
 // const connect = require('connect');
 const nodemailer = require('nodemailer');
+const http = require('http');
+const fs = require('fs');
 
 app.set('port', process.env.PORT || 3000);
 
 console.log(`__dirname: ${__dirname}`)
+
+var dataDir = __dirname + '/data';
+var vacationPhotoDir = dataDir + '/vacation-photo';
+fs.existsSync(dataDir) || fs.mkdirSync(dataDir);
+fs.existsSync(vacationPhotoDir) || fs.mkdirSync(vacationPhotoDir);
+
+switch (app.get('env')) {
+  case 'development':
+    // 紧凑的、彩色的开发日志
+    app.use(require('morgan')('dev'));
+    break;
+  case 'production':
+    // 模块 'express-logger' 支持按日志循环 
+    // 测试日志，可以在生产模式下运行程序(NODE_ENV=production node meadowlark. js)。
+    // 如果你想实际看看日志的循环功能，可以编辑 node_modules/express-logger/logger.js， 
+    // 修改变量 defaultInterval，比如从 24 小时改成 10 秒
+    app.use(require('express-logger')({
+      path: __dirname + '/log/requests.log',
+      // TODO: 1.这格式化特么的不起作用, 2.写入log表有bug: TypeError: util.pump is not a function
+      // dateFormat: 'YYYY-MM-DDTHH:MM:SS', 
+    }));
+    break;
+}
 
 app.use(function (req, res, next) {
   res.locals.showTests = app.get('env') !== 'production' &&
@@ -72,9 +97,17 @@ app.use(function (req, res, next) {
 // app.use(connect.basicAuth)();
 
 app.use(function (req, res, next) {
-  // 如果有即显消息，把它传到上下文中，然后清除它 
+  // 如果有即显消息，把它传到上下文中，然后清除它
   res.locals.flash = req.session.flash;
   delete req.session.flash;
+  next();
+});
+
+// 该中间件在启动多线程的情况下使用
+app.use(function (req, res, next) {
+  var cluster = require('cluster');
+  if (cluster.isWorker)
+    console.log('Worker %d received request', cluster.worker.id);
   next();
 });
 
@@ -92,17 +125,30 @@ app.get('/contest/vacation-photo', function (req, res) {
   });
 });
 app.post('/contest/vacation-photo/:year/:month', function (req, res) {
-  var monster = req.cookies.monster;
-  var signedMonster = req.signedCookies.monster;
-
   var form = new formidable.IncomingForm();
   form.parse(req, function (err, fields, files) {
-    if (err) return res.redirect(303, '/error');
-    console.log('received fields:');
-    console.log(fields);
-    console.log('received files:');
-    console.log(files);
-    res.redirect(303, '/thanks');
+    if (err) return res.redirect(303, '/error'); if (err) {
+      res.session.flash = {
+        type: 'danger',
+        intro: 'Oops!',
+        message: 'There was an error processing your submission. ' +
+          'Pelase try again.',
+      };
+      return res.redirect(303, '/contest/vacation-photo');
+    }
+    console.log('deal photo');
+    var photo = files.photo;
+    var dir = vacationPhotoDir + '/' + Date.now();
+    var path = dir + '/' + photo.name;
+    fs.mkdirSync(dir);
+    fs.renameSync(photo.path, dir + '/' + photo.name);
+    saveContestEntry('vacation-photo', fields.email, req.params.year, req.params.month, path);
+    req.session.flash = {
+      type: 'success',
+      intro: 'Good luck!',
+      message: 'You have been entered into the contest.',
+    };
+    return res.redirect(303, '/contest/vacation-photo');
   });
 });
 
@@ -178,11 +224,47 @@ app.use(function (req, res, next) {
 // 500 错误处理器(中间件) 
 app.use(function (err, req, res, next) {
   console.error(err.stack);
-  res.status(500);
-  res.render('500'); //  , { layout: null } 或者指定其他布局
+  app.status(500).render('500');
 });
 
-app.listen(app.get('port'), function () {
-  console.log('Express started on http://localhost:' +
-    app.get('port') + '; press Ctrl-C to terminate.');
-});
+// app.use(function (err, req, res, next) {
+//   console.error(err.stack);
+//   res.status(500);
+//   res.render('500'); //  , { layout: null } 或者指定其他布局
+// });
+
+
+// app.listen(app.get('port'), function () {
+//   console.log('Express started in [' + app.get('env') +
+//     '] mode on http://localhost:' + app.get('port') +
+//     '; press Ctrl-C to terminate.');
+//   setInterval(() => {
+//     console.log(new Date());
+//   }, 10000);
+// });
+
+
+function startServer() {
+  http.createServer(app).listen(app.get('port'), function () {
+    console.log('Express started in [' + app.get('env') +
+      '] mode on http://localhost:' + app.get('port') +
+      '; press Ctrl-C to terminate.');
+    // setInterval(() => {
+    //   console.log(new Date());
+    // }, 10000);
+  });
+}
+// 当直接运行脚本时，require.main === module 是 true;
+// 如果它是false，表明你的脚本是另外一个脚本用 require 加载进来的
+if (require.main === module) {
+  // 应用程序直接运行;启动应用服务器 
+  startServer();
+} else {
+  // 应用程序作为一个模块通过 "require" 引入 : 导出函数 
+  // 创建服务器
+  module.exports = startServer;
+}
+
+function saveContestEntry(contestName, email, year, month, photoPath) {
+  // TODO......这个稍后再做
+}

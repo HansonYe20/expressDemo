@@ -19,11 +19,15 @@
     "cookie-parser": "^1.4.4",
     "eslint": "^6.5.1",
     "express": "^4.17.1",
+    "express-logger": "0.0.3",
     "express-session": "^1.17.0",
     "express3-handlebars": "^0.5.2",
     "formidable": "^1.2.1",
+    "loadtest": "^3.0.8",
+    "morgan": "^1.9.1",
     "nodemailer": "^6.3.1",
     "nodemailer-smtp-transport": "^2.7.4",
+    "util": "^0.12.1",
     "xoauth2": "^1.2.0"
   },
   "devDependencies": {

@@ -3,6 +3,8 @@ node_modules
 .DS_Store
 
 src/project1/lib/credentials.js
+src/project1/log
+src/project1/data
 
 # usually maybe recover files
 *~
