@@ -61,7 +61,9 @@ Vacation.find(function (err, vacations) {
     maximumGuests: 8,
     available: true,
     packagesSold: 0,
-  }).save((err, product) => {
+  })
+  // .save();
+  .save((err, product) => {
     mongoose.disconnect((error) => {
       console.log('===>>> disconnect');
     });

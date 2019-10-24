@@ -10,6 +10,7 @@ const nodemailer = require('nodemailer');
 const http = require('http');
 const fs = require('fs');
 const Vacation = require('./models/vacation');
+const vhost = require('vhost');
 
 app.set('port', process.env.PORT || 3000);
 
@@ -101,6 +102,10 @@ app.engine('handlebars', exphbs.engine);
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'views'));
 
+// 创建子域名 "admin" ......它应该出现在所有其他路由之前 
+var admin = express.Router();
+app.use(vhost('admin.*', admin));
+
 app.use(function (req, res, next) {
   res.cookie('monster', Math.random());
   res.cookie('signed_monster', 'nom nom', { signed: true });
@@ -136,6 +141,11 @@ app.get('/', function (req, res) {
   console.log(req.session.userName);
   console.log(res.locals.flash);
   res.render('home');
+});
+
+// 创建 admin 的路由; 它们可以在任何地方定义
+admin.get('/', function(req, res){
+  res.render('thanks');
 });
 
 app.get('/vacations', function (req, res) {
