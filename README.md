@@ -8,4 +8,8 @@
 ## 文件读取
 1. node points/oprFiles.js
 ---
-## express相关见./src
+## express相关项目
+1. 启动dev: node src/project1/meadowlark.js
+2. 启动prod: NODE_ENV=production node src/project1/meadowlark.js
+3. 初始化数据库数据: node src/project1/initDatabase.js
+

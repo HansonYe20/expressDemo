@@ -9,10 +9,29 @@ const credentials = require('./lib/credentials.js');
 const nodemailer = require('nodemailer');
 const http = require('http');
 const fs = require('fs');
+const Vacation = require('./models/vacation');
 
 app.set('port', process.env.PORT || 3000);
 
 console.log(`__dirname: ${__dirname}`)
+
+
+var mongoose = require('mongoose');
+
+var opts = {
+  server: {
+    socketOptions: { keepAlive: 1 }
+  }
+};
+switch (app.get('env')) {
+  case 'development':
+    mongoose.connect(credentials.mongo.development.connectionString, opts);
+    break;
+  case 'production':
+    mongoose.connect(credentials.mongo.production.connectionString, opts);
+    break; default:
+    throw new Error('Unknown execution environment: ' + app.get('env'));
+}
 
 var dataDir = __dirname + '/data';
 var vacationPhotoDir = dataDir + '/vacation-photo';
@@ -31,8 +50,10 @@ switch (app.get('env')) {
     // 修改变量 defaultInterval，比如从 24 小时改成 10 秒
     app.use(require('express-logger')({
       path: __dirname + '/log/requests.log',
-      // TODO: 1.这格式化特么的不起作用, 2.写入log表有bug: TypeError: util.pump is not a function
-      // dateFormat: 'YYYY-MM-DDTHH:MM:SS', 
+      // TODO: 
+      // 1.这格式化特么的不起作用, 
+      // 2.写入log表有bug: TypeError: util.pump is not a function
+      // 3.dateFormat: 'YYYY-MM-DDTHH:MM:SS', 
     }));
     break;
 }
@@ -115,6 +136,24 @@ app.get('/', function (req, res) {
   console.log(req.session.userName);
   console.log(res.locals.flash);
   res.render('home');
+});
+
+app.get('/vacations', function (req, res) {
+  console.log('===>>>>vacations');
+  Vacation.find({ available: true }, function (err, vacations) {
+    var context = {
+      vacations: vacations.map(function (vacation) {
+        return {
+          sku: vacation.sku,
+          name: vacation.name,
+          description: vacation.description, 
+          price: vacation.getDisplayPrice(), 
+          inSeason: vacation.inSeason,
+        }
+      })
+    };
+    res.render('vacations', context);
+  });
 });
 
 app.get('/contest/vacation-photo', function (req, res) {
