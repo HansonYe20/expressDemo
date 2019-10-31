@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/vendor/mocha.css">
   {{/if}}
   <script src="//code.jquery.com/jquery-2.0.2.min.js"></script>
+  <link rel="stylesheet" href="{{static '/css/main.css'}}">
 </head>
 
 {{#if showTests}}
@@ -27,7 +28,8 @@
 <!-- not-so-secret comment 注释: 浏览器可以显示 -->
 
 <body>
-  <img src="/img/logo.jpg" alt="Meadowlark Travel Logo">
+  {{!-- <img src="/img/logo.jpg" alt="Meadowlark Travel Logo"> --}}
+  <img src="{{static '/img/logo.jpg'}}" alt="Meadowlark Travel Logo">
   {{{body}}}
 
   {{#if flash}}

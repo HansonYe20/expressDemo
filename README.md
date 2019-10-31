@@ -12,4 +12,5 @@
 1. 启动dev: node src/project1/meadowlark.js
 2. 启动prod: NODE_ENV=production node src/project1/meadowlark.js
 3. 初始化数据库数据: node src/project1/initDatabase.js
+4. 测试脚本: mocha -u tdd -R spec src/project1/qa/tests-api.js
 

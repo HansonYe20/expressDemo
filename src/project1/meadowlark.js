@@ -2,15 +2,22 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const fortune = require('./lib/fortune.js');
+const bodyParser = require('body-parser')
 const weatherData = require('./lib/weatherData.js');
 const formidable = require('formidable');
 const credentials = require('./lib/credentials.js');
-// const connect = require('connect');
+const connect = require('connect');
 const nodemailer = require('nodemailer');
 const http = require('http');
 const fs = require('fs');
-const Vacation = require('./models/vacation');
 const vhost = require('vhost');
+const Rest = require('connect-rest');
+const Vacation = require('./models/vacation');
+const Attraction = require('./models/attraction.js');
+
+
+// TODO: 路由改造
+// require('./routes.js')(app);
 
 app.set('port', process.env.PORT || 3000);
 
@@ -59,6 +66,9 @@ switch (app.get('env')) {
     break;
 }
 
+app.use('/api', require('cors')()); // 解开同源仅仅应用于/api下, 整个站点还是使用, 减少被攻击
+// app.use(require('cors')());
+
 app.use(function (req, res, next) {
   res.locals.showTests = app.get('env') !== 'production' &&
     req.query.test === '1';
@@ -94,6 +104,9 @@ const exphbs = require('express3-handlebars').create({
       };
       this._sections[name] = options.fn(this);
       return null;
+    },
+    static: function (name) {
+      return require('./lib/static.js').map(name);
     }
   }
 });
@@ -144,9 +157,49 @@ app.get('/', function (req, res) {
 });
 
 // 创建 admin 的路由; 它们可以在任何地方定义
-admin.get('/', function(req, res){
+admin.get('/', function (req, res) {
   res.render('thanks');
 });
+
+// app.get('/api/attractions', function (req, res) {
+//   Attraction.find({ approved: true }, function (err, attractions) {
+//     if (err) return res.send(500, 'Error occurred: database error.');
+//     res.json(attractions.map(function (a) {
+//       return {
+//         name: a.name,
+//         id: a._id,
+//         description: a.description,
+//         location: a.location,
+//       }
+//     }));
+//   });
+// });
+
+// app.post('/api/attraction', function (req, res) {
+//   var a = new Attraction({
+//     name: req.body.name,
+//     description: req.body.description,
+//     location: { lat: req.body.lat, lng: req.body.lng },
+//     history: {
+//       event: 'created', email: req.body.email, date: new Date(),
+//     },
+//     approved: false,
+//   });
+//   a.save(function (err, a) {
+//     if (err) return res.send(500, 'Error occurred: database error.');
+//     res.json({ id: a._id });
+//   });
+// });
+// app.get('/api/attraction/:id', function (req, res) {
+//   Attraction.findById(req.params.id, function (err, a) {
+//     if (err) return res.send(500, 'Error occurred: database error.'); res.json({
+//       name: a.name,
+//       id: a._id,
+//       description: a.description,
+//       location: a.location,
+//     });
+//   });
+// });
 
 app.get('/vacations', function (req, res) {
   console.log('===>>>>vacations');
@@ -156,8 +209,8 @@ app.get('/vacations', function (req, res) {
         return {
           sku: vacation.sku,
           name: vacation.name,
-          description: vacation.description, 
-          price: vacation.getDisplayPrice(), 
+          description: vacation.description,
+          price: vacation.getDisplayPrice(),
           inSeason: vacation.inSeason,
         }
       })
@@ -265,6 +318,41 @@ app.get('/thanks', function (req, res) {
   res.render('thanks');
 });
 
+/** 开始配置api */
+// sets up connect and adds other middlewares to parse query, parameters, content and session
+// use the ones you need
+var connectApp = connect()
+  .use(bodyParser.urlencoded({ extended: true }))
+  .use(bodyParser.json())
+
+// initial configuration of connect-rest. all-of-them are optional.
+// default context is /api, all services are off by default
+var options = {
+  context: '/api',
+  logger: { file: 'mochaTest.log', level: 'debug' },
+  apiKeys: ['849b7648-14b8-4154-9ef2-8d1dc4c2b7e9'],
+  // discover: { path: 'discover', secure: true },
+  // proto: { path: 'proto', secure: true }
+}
+var rest = Rest.create(options)
+
+// adds connect-rest middleware to connect
+connectApp.use(rest.processRequest())
+
+rest.get('/attractions', function (req, content, cb) {
+  Attraction.find({ approved: true }, function (err, attractions) {
+    if (err) return cb({ error: 'Internal error.' });
+    cb(null, attractions.map(function (a) {
+      return {
+        name: a.name,
+        description: a.description,
+        location: a.location,
+      };
+    }));
+  });
+});
+
+
 // 404 catch-all 处理器(中间件) 
 app.use(function (req, res, next) {
   res.status(404);
@@ -315,5 +403,5 @@ if (require.main === module) {
 }
 
 function saveContestEntry(contestName, email, year, month, photoPath) {
-  // TODO......这个稍后再做
+  // TODO:......这个稍后再做
 }
