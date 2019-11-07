@@ -46,7 +46,7 @@ module.exports = function (grunt) {
           'src/project1/public/js/meadowlark.min.js': ['src/project1/public/js/**/*.js']
         }
       }
-    }, 
+    },
     cssmin: {
       combine: {
         files: {
@@ -72,9 +72,45 @@ module.exports = function (grunt) {
           'src/project1/views/layouts/main.handlebars',
         ]
       },
+    },
+    lint_pattern: {
+      view_statics: {
+        options: {
+          rules: [
+            {
+              pattern: /<link [^>]*href=["'](?!\{\{static )/,
+              message: 'Un-mapped static resource found in <link>.'
+            }, {
+
+              pattern: /<script [^>]*src=["'](?!\{\{static )/,
+              message: 'Un-mapped static resource found in <script>.'
+            },
+            {
+              pattern: /<img [^>]*src=["'](?!\{\{static )/,
+              message: 'Un-mapped static resource found in <img>.'
+            },]
+        }, files: {
+          src: [
+            'src/project1/views/**/*.handlebars'
+          ]
+        }
+      },
+      css_statics: {
+        options: {
+          rules: [
+            {
+              pattern: /url\(/,
+              message: 'Un-mapped static found in LESS property.'
+            },]
+        }, files: {
+          src: [
+            'less/**/*.less'
+          ]
+        }
+      }
     }
   });
   // 注册任务
-  grunt.registerTask('default', ['cafemocha', 'jshint', 'exec']);
+  grunt.registerTask('default', ['cafemocha', 'jshint', 'exec', 'lint_pattern']);
   grunt.registerTask('static', ['less', 'cssmin', 'uglify', 'hashres']);
 };

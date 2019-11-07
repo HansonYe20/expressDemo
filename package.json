@@ -47,6 +47,7 @@
     "grunt-contrib-uglify": "^4.0.1",
     "grunt-exec": "^3.0.0",
     "grunt-hashres": "^0.4.1",
+    "grunt-lint-pattern": "^0.1.4",
     "jshint": "^2.10.2",
     "mocha": "^6.2.1",
     "restler": "^3.4.0",
